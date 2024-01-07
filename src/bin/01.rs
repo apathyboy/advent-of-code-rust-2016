@@ -1,4 +1,5 @@
 use glam::IVec2;
+use itertools::Itertools;
 use num_traits::abs;
 use num_traits::signum;
 
@@ -7,6 +8,22 @@ advent_of_code::solution!(1);
 enum TurnDirection {
     Left,
     Right,
+}
+
+#[derive(Debug)]
+struct LineSegment {
+    start: IVec2,
+    end: IVec2,
+}
+
+impl LineSegment {
+    fn new(a: IVec2, b: IVec2) -> Self {
+        if b.x < a.x || b.y < a.y {
+            Self { start: b, end: a }
+        } else {
+            Self { start: a, end: b }
+        }
+    }
 }
 
 fn turn(facing: &IVec2, turn_dir: TurnDirection) -> IVec2 {
@@ -23,21 +40,51 @@ fn turn(facing: &IVec2, turn_dir: TurnDirection) -> IVec2 {
     }
 }
 
+fn intersects_at(segment1: &LineSegment, segment2: &LineSegment) -> Option<IVec2> {
+    if (segment1.start.x == segment1.end.x && segment2.start.x == segment2.end.x)
+        || (segment1.start.y == segment1.end.y && segment2.start.y == segment2.end.y)
+    {
+        return None;
+    }
+
+    if segment1.start.x == segment1.end.x
+        && segment2.start.x < segment1.start.x
+        && segment2.end.x > segment1.start.x
+        && segment1.start.y < segment2.start.y
+        && segment1.end.y > segment2.end.y
+    {
+        return Some(IVec2::new(segment1.start.x, segment2.start.y));
+    }
+
+    if segment1.start.y == segment1.end.y
+        && segment2.start.y < segment1.start.y
+        && segment2.end.y > segment1.start.y
+        && segment1.start.x < segment2.start.x
+        && segment1.end.x > segment2.end.x
+    {
+        return Some(IVec2::new(segment2.start.x, segment1.start.y));
+    }
+
+    None
+}
+
+fn parse_instruction(instruction: &str) -> Option<(TurnDirection, i32)> {
+    let turn_direction = match &instruction[0..1] {
+        "L" => TurnDirection::Left,
+        "R" => TurnDirection::Right,
+        _ => panic!("Invalid instruction"),
+    };
+
+    let distance = instruction[1..].parse::<i32>().unwrap();
+
+    Some((turn_direction, distance))
+}
+
 pub fn part_one(input: &str) -> Option<i32> {
     let mut pos = IVec2::new(0, 0);
     let mut facing = IVec2::new(0, 1);
 
-    for (turn_direction, distance) in input.trim().split(", ").map(|instruction| {
-        let turn_direction = match &instruction[0..1] {
-            "L" => TurnDirection::Left,
-            "R" => TurnDirection::Right,
-            _ => panic!("Invalid instruction"),
-        };
-
-        let distance = instruction[1..].parse::<i32>().unwrap();
-
-        (turn_direction, distance)
-    }) {
+    for (turn_direction, distance) in input.trim().split(", ").filter_map(parse_instruction) {
         facing = turn(&facing, turn_direction);
         pos += facing * distance;
     }
@@ -46,6 +93,29 @@ pub fn part_one(input: &str) -> Option<i32> {
 }
 
 pub fn part_two(input: &str) -> Option<i32> {
+    let mut pos = IVec2::new(0, 0);
+    let mut facing = IVec2::new(0, 1);
+
+    let mut visited = Vec::from([pos]);
+
+    for (turn_direction, distance) in input.trim().split(", ").filter_map(parse_instruction) {
+        facing = turn(&facing, turn_direction);
+        let new_pos = pos + facing * distance;
+
+        let segment1 = LineSegment::new(pos, new_pos);
+
+        for (start, end) in visited.iter().tuple_windows() {
+            let segment2 = LineSegment::new(*start, *end);
+
+            if let Some(intersection) = intersects_at(&segment1, &segment2) {
+                return Some(abs(intersection.x) + abs(intersection.y));
+            }
+        }
+
+        pos = new_pos;
+        visited.push(pos);
+    }
+
     None
 }
 
@@ -69,7 +139,9 @@ mod tests {
 
     #[test]
     fn test_part_two() {
-        let result = part_two(&advent_of_code::template::read_file("examples", DAY));
+        let result = part_two(&advent_of_code::template::read_file_part(
+            "examples", DAY, 4,
+        ));
         assert_eq!(result, Some(4));
     }
 }
