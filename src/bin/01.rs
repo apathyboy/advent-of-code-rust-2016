@@ -68,10 +68,10 @@ fn intersects_at(segment1: &LineSegment, segment2: &LineSegment) -> Option<IVec2
     None
 }
 
-fn find_intersection(visited: &Vec<IVec2>, segment1: &LineSegment) -> Option<IVec2> {
+fn find_intersection(visited: &[IVec2], segment1: &LineSegment) -> Option<IVec2> {
     visited.iter().tuple_windows().find_map(|(start, end)| {
         let segment2 = LineSegment::new(*start, *end);
-        intersects_at(&segment1, &segment2)
+        intersects_at(segment1, &segment2)
     })
 }
 
