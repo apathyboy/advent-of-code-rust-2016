@@ -41,48 +41,37 @@ const DIRECTIONS: &[(char, IVec2)] = &[
     ('R', IVec2::new(1, 0)),
 ];
 
-pub fn part_one(input: &str) -> Option<String> {
-    let keypad: HashMap<_, _> = KEYPAD1.iter().cloned().collect();
+fn find_code(keypad: &HashMap<IVec2, char>, initial_button: &IVec2, input: &str) -> String {
     let directions: HashMap<_, _> = DIRECTIONS.iter().cloned().collect();
 
-    let mut current_button = IVec2::new(1, 1);
+    let mut current_button = initial_button.clone();
     let mut bathroom_code = Vec::new();
 
     for line in input.lines() {
         for instruction in line.chars() {
-            let new_button = *directions.get(&instruction).unwrap() + current_button;
+            let next_button = *directions.get(&instruction).unwrap() + current_button;
 
-            if keypad.contains_key(&new_button) {
-                current_button = new_button;
+            if keypad.contains_key(&next_button) {
+                current_button = next_button;
             }
         }
 
         bathroom_code.push(keypad.get(&current_button).unwrap());
     }
 
-    Some(bathroom_code.into_iter().collect::<String>())
+    bathroom_code.into_iter().collect::<String>()
+}
+
+pub fn part_one(input: &str) -> Option<String> {
+    let keypad: HashMap<_, _> = KEYPAD1.iter().cloned().collect();
+
+    Some(find_code(&keypad, &IVec2::new(1, 1), input))
 }
 
 pub fn part_two(input: &str) -> Option<String> {
     let keypad: HashMap<_, _> = KEYPAD2.iter().cloned().collect();
-    let directions: HashMap<_, _> = DIRECTIONS.iter().cloned().collect();
 
-    let mut current_button = IVec2::new(0, 2);
-    let mut bathroom_code = Vec::new();
-
-    for line in input.lines() {
-        for instruction in line.chars() {
-            let new_button = *directions.get(&instruction).unwrap() + current_button;
-
-            if keypad.contains_key(&new_button) {
-                current_button = new_button;
-            }
-        }
-
-        bathroom_code.push(keypad.get(&current_button).unwrap());
-    }
-
-    Some(bathroom_code.into_iter().collect::<String>())
+    Some(find_code(&keypad, &IVec2::new(0, 2), input))
 }
 
 #[cfg(test)]
