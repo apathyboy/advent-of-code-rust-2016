@@ -68,6 +68,13 @@ fn intersects_at(segment1: &LineSegment, segment2: &LineSegment) -> Option<IVec2
     None
 }
 
+fn find_intersection(visited: &Vec<IVec2>, segment1: &LineSegment) -> Option<IVec2> {
+    visited.iter().tuple_windows().find_map(|(start, end)| {
+        let segment2 = LineSegment::new(*start, *end);
+        intersects_at(&segment1, &segment2)
+    })
+}
+
 fn parse_instruction(instruction: &str) -> Option<(TurnDirection, i32)> {
     let turn_direction = match &instruction[0..1] {
         "L" => TurnDirection::Left,
@@ -81,42 +88,37 @@ fn parse_instruction(instruction: &str) -> Option<(TurnDirection, i32)> {
 }
 
 pub fn part_one(input: &str) -> Option<i32> {
-    let mut pos = IVec2::new(0, 0);
-    let mut facing = IVec2::new(0, 1);
+    let (final_pos, _) = input.trim().split(", ").filter_map(parse_instruction).fold(
+        (IVec2::new(0, 0), IVec2::new(0, 1)),
+        |(mut pos, mut facing), (turn_direction, distance)| {
+            facing = turn(&facing, turn_direction);
+            pos += facing * distance;
+            (pos, facing)
+        },
+    );
 
-    for (turn_direction, distance) in input.trim().split(", ").filter_map(parse_instruction) {
-        facing = turn(&facing, turn_direction);
-        pos += facing * distance;
-    }
-
-    Some(abs(pos.x) + abs(pos.y))
+    Some(abs(final_pos.x) + abs(final_pos.y))
 }
 
 pub fn part_two(input: &str) -> Option<i32> {
     let mut pos = IVec2::new(0, 0);
     let mut facing = IVec2::new(0, 1);
-
     let mut visited = Vec::from([pos]);
 
-    for (turn_direction, distance) in input.trim().split(", ").filter_map(parse_instruction) {
-        facing = turn(&facing, turn_direction);
-        let new_pos = pos + facing * distance;
+    input
+        .trim()
+        .split(", ")
+        .filter_map(parse_instruction)
+        .find_map(|(turn_direction, distance)| {
+            facing = turn(&facing, turn_direction);
+            let new_pos = pos + facing * distance;
+            let intersection = find_intersection(&visited, &LineSegment::new(pos, new_pos));
 
-        let segment1 = LineSegment::new(pos, new_pos);
+            pos = new_pos;
+            visited.push(pos);
 
-        for (start, end) in visited.iter().tuple_windows() {
-            let segment2 = LineSegment::new(*start, *end);
-
-            if let Some(intersection) = intersects_at(&segment1, &segment2) {
-                return Some(abs(intersection.x) + abs(intersection.y));
-            }
-        }
-
-        pos = new_pos;
-        visited.push(pos);
-    }
-
-    None
+            intersection.map(|inter| abs(inter.x) + abs(inter.y))
+        })
 }
 
 #[cfg(test)]
