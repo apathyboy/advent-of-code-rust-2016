@@ -31,16 +31,16 @@ pub fn part_two(input: &str) -> Option<u32> {
             let vals2 = parse_line(b);
             let vals3 = parse_line(c);
 
-            let mut vals1 = vec![vals1[0], vals2[0], vals3[0]];
-            vals1.sort();
+            let mut vals_a = vec![vals1[0], vals2[0], vals3[0]];
+            vals_a.sort();
 
-            let mut vals2 = vec![vals1[1], vals2[1], vals3[1]];
-            vals2.sort();
+            let mut vals_b = vec![vals1[1], vals2[1], vals3[1]];
+            vals_b.sort();
 
-            let mut vals3 = vec![vals1[2], vals2[2], vals3[2]];
-            vals3.sort();
+            let mut vals_c = vec![vals1[2], vals2[2], vals3[2]];
+            vals_c.sort();
 
-            vec![vals1, vals2, vals3]
+            vec![vals_a, vals_b, vals_c]
         })
         .filter(|vals| vals[0] + vals[1] > vals[2])
         .count();
