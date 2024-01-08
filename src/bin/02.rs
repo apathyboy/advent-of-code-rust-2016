@@ -44,7 +44,7 @@ const DIRECTIONS: &[(char, IVec2)] = &[
 fn find_code(keypad: &HashMap<IVec2, char>, initial_button: &IVec2, input: &str) -> String {
     let directions: HashMap<_, _> = DIRECTIONS.iter().cloned().collect();
 
-    let mut current_button = initial_button.clone();
+    let mut current_button = *initial_button;
     let mut bathroom_code = Vec::new();
 
     for line in input.lines() {
