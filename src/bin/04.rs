@@ -4,22 +4,15 @@ advent_of_code::solution!(4);
 
 #[derive(Debug, PartialEq, Eq)]
 struct Room {
-    encrypted_name: Vec<char>,
+    encrypted_name: String,
     sector_id: u32,
     checksum: Vec<char>,
 }
 
 impl Room {
     fn new(encrypted_name: &str, sector_id: u32, checksum: &str) -> Self {
-        let mut encrypted_name = encrypted_name
-            .chars()
-            .filter(|c| *c != '-')
-            .collect::<Vec<_>>();
-
-        encrypted_name.sort();
-
         Self {
-            encrypted_name,
+            encrypted_name: encrypted_name.to_string(),
             sector_id,
             checksum: checksum.chars().collect::<Vec<_>>(),
         }
@@ -28,8 +21,10 @@ impl Room {
     fn is_real(&self) -> bool {
         let mut freq_map = HashMap::new();
 
-        for &c in &self.encrypted_name {
-            *freq_map.entry(c).or_insert(0) += 1;
+        for c in self.encrypted_name.chars() {
+            if c != '-' {
+                *freq_map.entry(c).or_insert(0) += 1;
+            }
         }
 
         let mut freq_vec: Vec<(char, i32)> = freq_map.into_iter().collect();
@@ -41,6 +36,18 @@ impl Room {
             .zip(&self.checksum)
             .take(5)
             .all(|((a, _), b)| *a == *b)
+    }
+
+    fn decrypt(&self) -> String {
+        let shift = (self.sector_id % 26) as u8;
+
+        self.encrypted_name
+            .chars()
+            .map(|c| match c {
+                'a'..='z' => ((((c as u8 - b'a') + shift) % 26) + b'a') as char,
+                _ => ' ',
+            })
+            .collect()
     }
 }
 
@@ -70,24 +77,24 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(sum_of_sectors)
 }
 
-pub fn part_two(_input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<u32> {
+    input.lines().filter_map(parse_room).find_map(|room| {
+        if room.is_real() && room.decrypt().contains("pole") {
+            Some(room.sector_id)
+        } else {
+            None
+        }
+    })
 }
 
 #[cfg(test)]
 mod tests {
-    use itertools::Itertools;
-
     use super::*;
 
     #[test]
     fn test_parse_room() {
         let result = parse_room("aaaaa-bbb-z-y-x-123[abxyz]");
-        let room = Room {
-            encrypted_name: "aaaaabbbxyz".chars().collect_vec(),
-            sector_id: 123,
-            checksum: "abxyz".chars().collect_vec(),
-        };
+        let room = Room::new("aaaaa-bbb-z-y-x", 123, "abxyz");
         assert_eq!(result, Some(room));
     }
 
