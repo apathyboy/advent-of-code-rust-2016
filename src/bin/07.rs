@@ -4,13 +4,10 @@ use regex::Regex;
 advent_of_code::solution!(7);
 
 fn test_section(section: &str) -> bool {
-    for (a, b, c, d) in section.chars().tuple_windows() {
-        if a == d && b == c && a != b {
-            return true;
-        }
-    }
-
-    false
+    section
+        .chars()
+        .tuple_windows()
+        .any(|(a, b, c, d)| a == d && b == c && a != b)
 }
 
 fn supports_tls(ip: &str) -> bool {
@@ -38,15 +35,17 @@ fn supports_tls(ip: &str) -> bool {
 }
 
 fn find_potentials(block: &str) -> Vec<(char, char, char)> {
-    let mut potentials = Vec::new();
-
-    for (a, b, c) in block.chars().tuple_windows() {
-        if a == c && a != b {
-            potentials.push((a, b, c));
-        }
-    }
-
-    potentials
+    block
+        .chars()
+        .tuple_windows()
+        .filter_map(|(a, b, c)| {
+            if a == c && a != b {
+                Some((a, b, c))
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 fn supports_ssl(ip: &str) -> bool {
@@ -65,13 +64,9 @@ fn supports_ssl(ip: &str) -> bool {
         }
     }
 
-    for (a, b, _) in supernet_aba {
-        if hypernet_bab.contains(&(b, a, b)) {
-            return true;
-        }
-    }
-
-    false
+    supernet_aba
+        .iter()
+        .any(|(a, b, _)| hypernet_bab.contains(&(*b, *a, *b)))
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
