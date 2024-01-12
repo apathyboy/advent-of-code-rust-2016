@@ -25,6 +25,7 @@ dependencies = [
  "dhat",
  "glam",
  "itertools",
+ "lazy_static",
  "md5",
  "num-traits",
  "pico-args",
