@@ -93,7 +93,7 @@ fn update_bot(bots: &mut HashMap<String, Bot>, target: &str, chip: usize) {
     }
 }
 
-pub fn part_one(input: &str) -> Option<u32> {
+fn run_bots(input: &str) -> HashMap<String, Bot> {
     let mut bots: HashMap<String, Bot> = input
         .lines()
         .filter_map(parse_bot_definition)
@@ -103,6 +103,12 @@ pub fn part_one(input: &str) -> Option<u32> {
     for (chip, bot) in input.lines().filter_map(parse_instruction) {
         update_bot(&mut bots, &bot, chip);
     }
+
+    bots
+}
+
+pub fn part_one(input: &str) -> Option<u32> {
+    let bots = run_bots(input);
 
     bots.iter().find(|(_, b)| b.is_responsible).map(|(bot, _)| {
         let (_, id) = bot.split_once(' ').unwrap();
@@ -112,15 +118,7 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
-    let mut bots: HashMap<String, Bot> = input
-        .lines()
-        .filter_map(parse_bot_definition)
-        .map(|b| (b.id.clone(), b))
-        .collect();
-
-    for (chip, bot) in input.lines().filter_map(parse_instruction) {
-        update_bot(&mut bots, &bot, chip);
-    }
+    let bots = run_bots(input);
 
     let output0 = bots.get(&String::from("output 0")).unwrap().chips[0];
     let output1 = bots.get(&String::from("output 1")).unwrap().chips[0];
@@ -131,8 +129,15 @@ pub fn part_two(input: &str) -> Option<usize> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
-    fn test_part_one() {
-        assert_eq!(0, 0);
+    fn test_running_bots() {
+        let bots = run_bots(&advent_of_code::template::read_file("examples", DAY));
+        let output0 = bots.get(&String::from("output 0")).unwrap().chips.first();
+        let output2 = bots.get(&String::from("output 2")).unwrap().chips.first();
+
+        assert_eq!(output0, Some(&5));
+        assert_eq!(output2, Some(&3));
     }
 }
