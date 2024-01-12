@@ -1,7 +1,12 @@
 use itertools::Itertools;
+use lazy_static::lazy_static;
 use regex::Regex;
 
 advent_of_code::solution!(7);
+
+lazy_static! {
+    static ref IP_REGEX: Regex = Regex::new(r"(?:\[(.*?)\])|([^\[\]]+)").unwrap();
+}
 
 fn test_section(section: &str) -> bool {
     section
@@ -11,13 +16,10 @@ fn test_section(section: &str) -> bool {
 }
 
 fn supports_tls(ip: &str) -> bool {
-    // Regex pattern to match text inside and outside brackets
-    let re = Regex::new(r"(?:\[(.*?)\])|([^\[\]]+)").unwrap();
-
     let mut supports_tls = false;
 
     // Iterate over all matches
-    for cap in re.captures_iter(ip) {
+    for cap in IP_REGEX.captures_iter(ip) {
         if let Some(hypernet) = cap.get(1) {
             // Segment inside brackets
             if test_section(hypernet.as_str()) {
@@ -49,14 +51,11 @@ fn find_potentials(block: &str) -> Vec<(char, char, char)> {
 }
 
 fn supports_ssl(ip: &str) -> bool {
-    // Regex pattern to match text inside and outside brackets
-    let re = Regex::new(r"(?:\[(.*?)\])|([^\[\]]+)").unwrap();
-
     let mut supernet_aba = Vec::new();
     let mut hypernet_bab = Vec::new();
 
     // Iterate over all matches
-    for cap in re.captures_iter(ip) {
+    for cap in IP_REGEX.captures_iter(ip) {
         if let Some(hypernet) = cap.get(1) {
             hypernet_bab.append(&mut find_potentials(hypernet.as_str()));
         } else if let Some(supernet) = cap.get(2) {
