@@ -125,6 +125,10 @@ fn draw_scene(elevator: &Elevator, floors: &[Vec<Item>]) {
     println!();
 }
 
+// stepping rules
+//
+//
+
 fn try_step(elevator: Elevator, floors: Vec<Vec<Item>>) -> Vec<(Elevator, Vec<Vec<Item>>)> {
     draw_scene(&elevator, &floors);
 
@@ -139,7 +143,7 @@ fn try_step(elevator: Elevator, floors: Vec<Vec<Item>>) -> Vec<(Elevator, Vec<Ve
         0 => {
             println!("{:?}", &floors[0]);
             // try to move a pair up
-            if floors[0].len() >= 2 {
+            if !floors[0].is_empty() && floors[0].len() % 2 == 0 {
                 if floors[0][0].name == floors[0][1].name {
                     let item1 = floors[0].pop();
                     let item2 = floors[0].pop();
