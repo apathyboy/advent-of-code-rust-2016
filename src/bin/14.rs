@@ -28,16 +28,10 @@ pub fn part_one(input: &str) -> Option<u32> {
     let mut triples: Vec<(String, u32, bool)> = Vec::new();
 
     for i in 0.. {
-        //if i > 1000 {
-        //    panic!("stop");
-        //}
         let secret = advent_of_code::make_secret(salt, i);
         let hash = advent_of_code::make_hash(&secret);
 
-        // check for key
         triples.retain(|&(_, idx, is_key)| is_key || idx > if i >= 1000 { i - 1000 } else { 0 });
-
-        //println!("{:?}", &triples);
 
         for (triple, _, is_key) in triples.iter_mut().filter(|(_, _, is_key)| !is_key) {
             let triple: &str = triple;
@@ -54,15 +48,10 @@ pub fn part_one(input: &str) -> Option<u32> {
             return Some(*idx);
         }
 
-        // check for triple
-
         let triple = find_first_triple(&hash);
 
         if let Some(triple) = triple {
-            //println!("Triple found: {} at {}", triple, i);
-            //if !triples.contains_key(&triple.to_string()) {
             triples.push((triple.to_string(), i, false));
-            //}
         }
     }
 
@@ -72,20 +61,13 @@ pub fn part_one(input: &str) -> Option<u32> {
 pub fn part_two(input: &str) -> Option<u32> {
     let salt = input.trim();
 
-    // make this a hashmap of key (String, u32) and the value as a bool flag for if it is a key
     let mut triples: Vec<(String, u32, bool)> = Vec::new();
 
     for i in 0.. {
-        //if i > 1000 {
-        //    panic!("stop");
-        //}
         let secret = advent_of_code::make_secret(salt, i);
         let hash = make_key_stretching_hash(&secret);
 
-        // check for key
         triples.retain(|&(_, idx, is_key)| is_key || idx > if i >= 1000 { i - 1000 } else { 0 });
-
-        //println!("{:?}", &triples);
 
         for (triple, _, is_key) in triples.iter_mut().filter(|(_, _, is_key)| !is_key) {
             let triple: &str = triple;
@@ -102,15 +84,10 @@ pub fn part_two(input: &str) -> Option<u32> {
             return Some(*idx);
         }
 
-        // check for triple
-
         let triple = find_first_triple(&hash);
 
         if let Some(triple) = triple {
-            //println!("Triple found: {} at {}", triple, i);
-            //if !triples.contains_key(&triple.to_string()) {
             triples.push((triple.to_string(), i, false));
-            //}
         }
     }
 
