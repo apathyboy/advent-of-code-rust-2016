@@ -1,14 +1,5 @@
 advent_of_code::solution!(5);
 
-pub fn make_secret(input: &str, suffix: u32) -> String {
-    format!("{}{}", input.trim(), suffix)
-}
-
-pub fn make_hash(input: &str) -> String {
-    let digest = md5::compute(input);
-    format!("{:x}", digest)
-}
-
 pub fn is_valid_hash(input: &str, precision: usize) -> bool {
     input.starts_with(&"0".repeat(precision))
 }
@@ -19,8 +10,8 @@ pub fn part_one(input: &str) -> Option<String> {
     let mut password = Vec::new();
 
     for i in 0.. {
-        let secret = make_secret(door_id, i);
-        let hash = make_hash(&secret);
+        let secret = advent_of_code::make_secret(door_id, i);
+        let hash = advent_of_code::make_hash(&secret);
 
         if is_valid_hash(&hash, 5) {
             password.push(hash.chars().nth(5).unwrap());
@@ -40,8 +31,8 @@ pub fn part_two(input: &str) -> Option<String> {
     let password = &mut [None; 8];
 
     for i in 0.. {
-        let secret = make_secret(door_id, i);
-        let hash = make_hash(&secret);
+        let secret = advent_of_code::make_secret(door_id, i);
+        let hash = advent_of_code::make_hash(&secret);
         let idx = hash.chars().nth(5).unwrap();
 
         if !is_valid_hash(&hash, 5) || !idx.is_ascii_digit() {
