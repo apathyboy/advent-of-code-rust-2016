@@ -1,3 +1,5 @@
+use advent_of_code::{make_hash, make_secret};
+
 use itertools::Itertools;
 
 advent_of_code::solution!(14);
@@ -12,10 +14,10 @@ fn find_first_triple(input: &str) -> Option<char> {
 }
 
 fn make_key_stretching_hash(input: &str) -> String {
-    let mut hash = advent_of_code::make_hash(input);
+    let mut hash = make_hash(input);
 
     for _ in 0..2016 {
-        hash = advent_of_code::make_hash(&hash);
+        hash = make_hash(&hash);
     }
 
     hash
@@ -28,8 +30,8 @@ pub fn part_one(input: &str) -> Option<u32> {
     let mut triples: Vec<(String, u32, bool)> = Vec::new();
 
     for i in 0.. {
-        let secret = advent_of_code::make_secret(salt, i);
-        let hash = advent_of_code::make_hash(&secret);
+        let secret = make_secret(salt, i);
+        let hash = make_hash(&secret);
 
         triples.retain(|&(_, idx, is_key)| is_key || idx > if i >= 1000 { i - 1000 } else { 0 });
 
