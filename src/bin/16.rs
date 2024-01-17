@@ -9,11 +9,7 @@ fn checksum(input: &str) -> String {
         .map(|(a, b)| if a == b { '1' } else { '0' })
         .collect::<String>();
 
-    loop {
-        if checksum.len() % 2 != 0 {
-            break;
-        }
-
+    while checksum.len() % 2 == 0 {
         checksum = checksum
             .chars()
             .tuples()
@@ -48,8 +44,8 @@ pub fn part_one(input: &str) -> Option<String> {
     Some(fill_disk(input.trim(), 272))
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<String> {
+    Some(fill_disk(input.trim(), 35651584))
 }
 
 #[cfg(test)]
