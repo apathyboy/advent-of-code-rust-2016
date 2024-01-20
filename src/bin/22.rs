@@ -6,16 +6,22 @@ use regex::Regex;
 
 advent_of_code::solution!(22);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Node {
     pos: IVec2,
     size: u32,
     used: u32,
+    origin: IVec2,
 }
 
 impl Node {
     fn new(pos: IVec2, size: u32, used: u32) -> Self {
-        Node { pos, size, used }
+        Node {
+            pos,
+            size,
+            used,
+            origin: pos,
+        }
     }
 
     fn name(&self) -> String {
@@ -71,6 +77,18 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(viable_pairs.len())
 }
 
+fn get_tile(used: u32, is_goal: bool) -> char {
+    if is_goal {
+        'G'
+    } else if used == 0 {
+        '_'
+    } else if used > 100 {
+        '#'
+    } else {
+        '.'
+    }
+}
+
 pub fn part_two(input: &str) -> Option<u32> {
     let nodes: Vec<_> = input.lines().skip(2).filter_map(parse_line).collect();
 
@@ -78,12 +96,34 @@ pub fn part_two(input: &str) -> Option<u32> {
         .iter()
         .filter(|&n| n.pos.y == 0)
         .max_by(|&a, &b| a.pos.x.cmp(&b.pos.x))
-        .unwrap();
+        .unwrap()
+        .clone();
 
     let empty_node = nodes.iter().find(|&n| n.used == 0).unwrap();
 
     println!("Target data: {:?}", target_data);
     println!("Empty node: {:?}", empty_node);
+
+    // the last step is the one where the free space was at 0,0 and moved to where the target data is
+    for y in 0..28 {
+        for x in 0..37 {
+            let offset = (y * 37) + x;
+            let is_goal = nodes[offset].origin == target_data.origin;
+            if is_goal {
+                println!("Node goal: {:?}", &nodes[offset]);
+            }
+
+            let tile = get_tile(nodes[offset].used, is_goal);
+
+            if x == 0 && y == 0 {
+                print!("({})", tile);
+            } else {
+                print!(" {} ", tile);
+            }
+        }
+
+        println!();
+    }
 
     None
 }
