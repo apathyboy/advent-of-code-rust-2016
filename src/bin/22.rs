@@ -1,4 +1,5 @@
 use glam::IVec2;
+use pathfinding::prelude::bfs;
 use std::collections::HashSet;
 
 use lazy_static::lazy_static;
@@ -11,21 +12,41 @@ struct Node {
     pos: IVec2,
     size: u32,
     used: u32,
-    origin: IVec2,
 }
 
 impl Node {
     fn new(pos: IVec2, size: u32, used: u32) -> Self {
-        Node {
-            pos,
-            size,
-            used,
-            origin: pos,
-        }
+        Node { pos, size, used }
     }
 
     fn name(&self) -> String {
         format!("node-x{}-y{}", self.pos.x, self.pos.y)
+    }
+}
+
+struct StorageCluster {
+    nodes: Vec<Node>,
+    width: i32,
+    height: i32,
+}
+
+impl StorageCluster {
+    fn new(nodes: Vec<Node>) -> Self {
+        let width = nodes.iter().map(|n| n.pos.x).max().unwrap() + 1;
+        let height = nodes.iter().map(|n| n.pos.y).max().unwrap() + 1;
+        StorageCluster {
+            nodes,
+            width,
+            height,
+        }
+    }
+
+    fn get_offset(&self, in_x: i32, in_y: i32) -> usize {
+        ((self.height - 1 - in_y) * in_x + in_x + (in_x * in_y + in_y)) as usize
+    }
+
+    fn in_bounds(&self, test_pos: &IVec2) -> bool {
+        test_pos.x >= 0 && test_pos.y >= 0 && test_pos.x < self.width && test_pos.y < self.height
     }
 }
 
@@ -50,6 +71,46 @@ fn parse_line(line: &str) -> Option<Node> {
         .unwrap();
 
     Some(Node::new(IVec2::new(x, y), size, used))
+}
+
+fn successors(pos: &IVec2, cluster: &StorageCluster, max_size: u32) -> Vec<IVec2> {
+    //let mut successors = Vec::new();
+    let directions = [
+        IVec2::new(0, -1),
+        IVec2::new(0, 1),
+        IVec2::new(-1, 0),
+        IVec2::new(1, 0),
+    ];
+
+    directions
+        .iter()
+        .filter_map(|dir| {
+            let test_pos = *pos + *dir;
+
+            if !cluster.in_bounds(&test_pos) {
+                return None;
+            }
+
+            let test_offset = cluster.get_offset(test_pos.x, test_pos.y);
+            let test_node = &cluster.nodes[test_offset];
+
+            if test_node.used <= max_size {
+                Some(test_node.pos)
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+fn fewest_steps(start: &Node, goal: &Node, cluster: &StorageCluster) -> usize {
+    let result = bfs(
+        &start.pos,
+        |p| successors(p, cluster, start.size),
+        |p| *p == goal.pos,
+    );
+
+    result.expect("no path found").len() - 1
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
@@ -77,55 +138,21 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(viable_pairs.len())
 }
 
-fn get_tile(used: u32, is_goal: bool) -> char {
-    if is_goal {
-        'G'
-    } else if used == 0 {
-        '_'
-    } else if used > 100 {
-        '#'
-    } else {
-        '.'
-    }
-}
+pub fn part_two(input: &str) -> Option<usize> {
+    let cluster = StorageCluster::new(input.lines().skip(2).filter_map(parse_line).collect());
 
-pub fn part_two(input: &str) -> Option<u32> {
-    let nodes: Vec<_> = input.lines().skip(2).filter_map(parse_line).collect();
-
-    let target_data = nodes
+    let target_node = cluster
+        .nodes
         .iter()
         .filter(|&n| n.pos.y == 0)
         .max_by(|&a, &b| a.pos.x.cmp(&b.pos.x))
-        .unwrap()
-        .clone();
+        .unwrap();
 
-    let empty_node = nodes.iter().find(|&n| n.used == 0).unwrap();
+    let empty_node = cluster.nodes.iter().find(|&n| n.used == 0).unwrap();
 
-    println!("Target data: {:?}", target_data);
-    println!("Empty node: {:?}", empty_node);
+    let steps = fewest_steps(empty_node, target_node, &cluster);
 
-    // the last step is the one where the free space was at 0,0 and moved to where the target data is
-    for y in 0..28 {
-        for x in 0..37 {
-            let offset = (y * 37) + x;
-            let is_goal = nodes[offset].origin == target_data.origin;
-            if is_goal {
-                println!("Node goal: {:?}", &nodes[offset]);
-            }
-
-            let tile = get_tile(nodes[offset].used, is_goal);
-
-            if x == 0 && y == 0 {
-                print!("({})", tile);
-            } else {
-                print!(" {} ", tile);
-            }
-        }
-
-        println!();
-    }
-
-    None
+    Some(steps + ((cluster.width as usize - 2) * 5))
 }
 
 #[cfg(test)]
@@ -135,12 +162,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let result = part_one(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(7));
     }
 
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(7));
     }
 }
