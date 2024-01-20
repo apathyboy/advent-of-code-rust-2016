@@ -1,4 +1,5 @@
 use glam::IVec2;
+use pathfinding::prelude::bfs;
 use std::collections::HashSet;
 
 use lazy_static::lazy_static;
@@ -11,21 +12,33 @@ struct Node {
     pos: IVec2,
     size: u32,
     used: u32,
-    origin: IVec2,
 }
 
 impl Node {
     fn new(pos: IVec2, size: u32, used: u32) -> Self {
-        Node {
-            pos,
-            size,
-            used,
-            origin: pos,
-        }
+        Node { pos, size, used }
     }
 
     fn name(&self) -> String {
         format!("node-x{}-y{}", self.pos.x, self.pos.y)
+    }
+}
+
+struct StorageCluster {
+    nodes: Vec<Node>,
+    width: i32,
+    height: i32,
+}
+
+impl StorageCluster {
+    fn new(nodes: Vec<Node>) -> Self {
+        let width = nodes.iter().map(|n| n.pos.x).max().unwrap() + 1;
+        let height = nodes.iter().map(|n| n.pos.y).max().unwrap() + 1;
+        StorageCluster {
+            nodes,
+            width,
+            height,
+        }
     }
 }
 
@@ -50,6 +63,70 @@ fn parse_line(line: &str) -> Option<Node> {
         .unwrap();
 
     Some(Node::new(IVec2::new(x, y), size, used))
+}
+
+fn get_offset(x: i32, y: i32) -> usize {
+    ((27 - y) * x + x + (x * y + y)) as usize
+}
+
+fn successors(pos: &IVec2, nodes: &[Node], max_size: u32) -> Vec<IVec2> {
+    let mut successors = Vec::new();
+
+    // up
+    if pos.y > 0 {
+        let up_pos = *pos + IVec2::new(0, -1);
+        let up_offset = get_offset(up_pos.x, up_pos.y);
+        let up_node = &nodes[up_offset];
+
+        if up_node.used <= max_size {
+            successors.push(up_node.pos);
+        }
+    }
+
+    // down
+    if pos.y < 27 {
+        let down_pos = *pos + IVec2::new(0, 1);
+        let down_offset = get_offset(down_pos.x, down_pos.y);
+        let down_node = &nodes[down_offset];
+
+        if down_node.used <= max_size {
+            successors.push(down_node.pos);
+        }
+    }
+
+    // left
+    if pos.x > 0 {
+        let left_pos = *pos + IVec2::new(-1, 0);
+        let left_offset = get_offset(left_pos.x, left_pos.y);
+        let left_node = &nodes[left_offset];
+
+        if left_node.used <= max_size {
+            successors.push(left_node.pos);
+        }
+    }
+
+    // right
+    if pos.x < 36 {
+        let right_pos = *pos + IVec2::new(1, 0);
+        let right_offset = get_offset(right_pos.x, right_pos.y);
+        let right_node = &nodes[right_offset];
+
+        if right_node.used <= max_size {
+            successors.push(right_node.pos);
+        }
+    }
+
+    successors
+}
+
+fn fewest_steps(start: &Node, goal: &Node, nodes: &[Node]) -> usize {
+    let result = bfs(
+        &start.pos,
+        |p| successors(p, nodes, start.size),
+        |p| *p == goal.pos,
+    );
+
+    result.expect("no path found").len() - 1
 }
 
 pub fn part_one(input: &str) -> Option<usize> {
@@ -77,55 +154,21 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(viable_pairs.len())
 }
 
-fn get_tile(used: u32, is_goal: bool) -> char {
-    if is_goal {
-        'G'
-    } else if used == 0 {
-        '_'
-    } else if used > 100 {
-        '#'
-    } else {
-        '.'
-    }
-}
+pub fn part_two(input: &str) -> Option<usize> {
+    let cluster = StorageCluster::new(input.lines().skip(2).filter_map(parse_line).collect());
 
-pub fn part_two(input: &str) -> Option<u32> {
-    let nodes: Vec<_> = input.lines().skip(2).filter_map(parse_line).collect();
-
-    let target_data = nodes
+    let target_node = cluster
+        .nodes
         .iter()
         .filter(|&n| n.pos.y == 0)
         .max_by(|&a, &b| a.pos.x.cmp(&b.pos.x))
-        .unwrap()
-        .clone();
+        .unwrap();
 
-    let empty_node = nodes.iter().find(|&n| n.used == 0).unwrap();
+    let empty_node = cluster.nodes.iter().find(|&n| n.used == 0).unwrap();
 
-    println!("Target data: {:?}", target_data);
-    println!("Empty node: {:?}", empty_node);
+    let steps = fewest_steps(empty_node, target_node, &cluster.nodes);
 
-    // the last step is the one where the free space was at 0,0 and moved to where the target data is
-    for y in 0..28 {
-        for x in 0..37 {
-            let offset = (y * 37) + x;
-            let is_goal = nodes[offset].origin == target_data.origin;
-            if is_goal {
-                println!("Node goal: {:?}", &nodes[offset]);
-            }
-
-            let tile = get_tile(nodes[offset].used, is_goal);
-
-            if x == 0 && y == 0 {
-                print!("({})", tile);
-            } else {
-                print!(" {} ", tile);
-            }
-        }
-
-        println!();
-    }
-
-    None
+    Some(steps + (35 * 5))
 }
 
 #[cfg(test)]
