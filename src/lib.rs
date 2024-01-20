@@ -18,6 +18,12 @@ pub struct PrototypeComputer {
     instruction_pointer: usize,
 }
 
+impl Default for PrototypeComputer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PrototypeComputer {
     pub fn new() -> Self {
         Self {
