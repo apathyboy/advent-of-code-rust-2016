@@ -40,6 +40,14 @@ impl StorageCluster {
             height,
         }
     }
+
+    fn get_offset(&self, in_x: i32, in_y: i32) -> usize {
+        ((self.height - 1 - in_y) * in_x + in_x + (in_x * in_y + in_y)) as usize
+    }
+
+    fn in_bounds(&self, test_pos: &IVec2) -> bool {
+        test_pos.x >= 0 && test_pos.y >= 0 && test_pos.x < self.width && test_pos.y < self.height
+    }
 }
 
 lazy_static! {
@@ -65,64 +73,40 @@ fn parse_line(line: &str) -> Option<Node> {
     Some(Node::new(IVec2::new(x, y), size, used))
 }
 
-fn get_offset(x: i32, y: i32) -> usize {
-    ((27 - y) * x + x + (x * y + y)) as usize
+fn successors(pos: &IVec2, cluster: &StorageCluster, max_size: u32) -> Vec<IVec2> {
+    //let mut successors = Vec::new();
+    let directions = [
+        IVec2::new(0, -1),
+        IVec2::new(0, 1),
+        IVec2::new(-1, 0),
+        IVec2::new(1, 0),
+    ];
+
+    directions
+        .iter()
+        .filter_map(|dir| {
+            let test_pos = *pos + *dir;
+
+            if !cluster.in_bounds(&test_pos) {
+                return None;
+            }
+
+            let test_offset = cluster.get_offset(test_pos.x, test_pos.y);
+            let test_node = &cluster.nodes[test_offset];
+
+            if test_node.used <= max_size {
+                Some(test_node.pos)
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
-fn successors(pos: &IVec2, nodes: &[Node], max_size: u32) -> Vec<IVec2> {
-    let mut successors = Vec::new();
-
-    // up
-    if pos.y > 0 {
-        let up_pos = *pos + IVec2::new(0, -1);
-        let up_offset = get_offset(up_pos.x, up_pos.y);
-        let up_node = &nodes[up_offset];
-
-        if up_node.used <= max_size {
-            successors.push(up_node.pos);
-        }
-    }
-
-    // down
-    if pos.y < 27 {
-        let down_pos = *pos + IVec2::new(0, 1);
-        let down_offset = get_offset(down_pos.x, down_pos.y);
-        let down_node = &nodes[down_offset];
-
-        if down_node.used <= max_size {
-            successors.push(down_node.pos);
-        }
-    }
-
-    // left
-    if pos.x > 0 {
-        let left_pos = *pos + IVec2::new(-1, 0);
-        let left_offset = get_offset(left_pos.x, left_pos.y);
-        let left_node = &nodes[left_offset];
-
-        if left_node.used <= max_size {
-            successors.push(left_node.pos);
-        }
-    }
-
-    // right
-    if pos.x < 36 {
-        let right_pos = *pos + IVec2::new(1, 0);
-        let right_offset = get_offset(right_pos.x, right_pos.y);
-        let right_node = &nodes[right_offset];
-
-        if right_node.used <= max_size {
-            successors.push(right_node.pos);
-        }
-    }
-
-    successors
-}
-
-fn fewest_steps(start: &Node, goal: &Node, nodes: &[Node]) -> usize {
+fn fewest_steps(start: &Node, goal: &Node, cluster: &StorageCluster) -> usize {
     let result = bfs(
         &start.pos,
-        |p| successors(p, nodes, start.size),
+        |p| successors(p, cluster, start.size),
         |p| *p == goal.pos,
     );
 
@@ -166,9 +150,9 @@ pub fn part_two(input: &str) -> Option<usize> {
 
     let empty_node = cluster.nodes.iter().find(|&n| n.used == 0).unwrap();
 
-    let steps = fewest_steps(empty_node, target_node, &cluster.nodes);
+    let steps = fewest_steps(empty_node, target_node, &cluster);
 
-    Some(steps + (35 * 5))
+    Some(steps + ((cluster.width as usize - 2) * 5))
 }
 
 #[cfg(test)]
@@ -178,12 +162,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let result = part_one(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(7));
     }
 
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(7));
     }
 }
