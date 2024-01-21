@@ -58,7 +58,7 @@ impl PrototypeComputer {
         *self.registers.get_mut(&register).unwrap() = val;
     }
 
-    fn cpy(&mut self, source: &str, dest: &str) {
+    fn cpy(&mut self, source: &str, dest: &str) -> Option<i32> {
         let source_register = source.chars().next().unwrap();
         let dest_register = dest.chars().next().unwrap();
 
@@ -73,23 +73,37 @@ impl PrototypeComputer {
         }
 
         self.instruction_pointer += 1;
+
+        None
     }
 
-    fn inc(&mut self, target: &str) {
+    fn out(&mut self, target: &str) -> Option<i32> {
+        let target_register = target.chars().next().unwrap();
+
+        self.instruction_pointer += 1;
+
+        Some(*self.registers.get(&target_register).unwrap())
+    }
+
+    fn inc(&mut self, target: &str) -> Option<i32> {
         let target_register = target.chars().next().unwrap();
         *self.registers.get_mut(&target_register).unwrap() += 1;
 
         self.instruction_pointer += 1;
+
+        None
     }
 
-    fn dec(&mut self, target: &str) {
+    fn dec(&mut self, target: &str) -> Option<i32> {
         let target_register = target.chars().next().unwrap();
         *self.registers.get_mut(&target_register).unwrap() -= 1;
 
         self.instruction_pointer += 1;
+
+        None
     }
 
-    fn jnz(&mut self, source: &str, dest: &str) {
+    fn jnz(&mut self, source: &str, dest: &str) -> Option<i32> {
         let source_register = source.chars().next().unwrap();
         let dest_register = dest.chars().next().unwrap();
 
@@ -115,9 +129,11 @@ impl PrototypeComputer {
         } else {
             self.instruction_pointer += 1;
         }
+
+        None
     }
 
-    fn tgl(&mut self, register: &str) {
+    fn tgl(&mut self, register: &str) -> Option<i32> {
         let register = register.chars().next().unwrap();
         let offset = *self.registers.get(&register).unwrap();
 
@@ -132,7 +148,7 @@ impl PrototypeComputer {
 
         if instruction_pointer >= self.program.len() {
             self.instruction_pointer += 1;
-            return;
+            return None;
         }
 
         let instruction = &mut self.program[instruction_pointer];
@@ -156,6 +172,8 @@ impl PrototypeComputer {
         };
 
         self.instruction_pointer += 1;
+
+        None
     }
 
     pub fn parse_program(&self, program: &[&str]) -> Vec<PrototypeComputerInstruction> {
@@ -168,6 +186,34 @@ impl PrototypeComputer {
                 Some(PrototypeComputerInstruction::new(name, arguments))
             })
             .collect::<Vec<_>>()
+    }
+
+    pub fn load_program(&mut self, program: &[&str]) {
+        self.program = self.parse_program(program);
+    }
+
+    pub fn run_to_next_output(&mut self) -> i32 {
+        loop {
+            if self.instruction_pointer >= self.program.len() {
+                panic!("Unexpected program end reached");
+            }
+
+            let instruction = self.program[self.instruction_pointer].clone();
+
+            let output = match instruction.name.as_str() {
+                "cpy" => self.cpy(&instruction.arguments[0], &instruction.arguments[1]),
+                "inc" => self.inc(&instruction.arguments[0]),
+                "out" => self.out(&instruction.arguments[0]),
+                "dec" => self.dec(&instruction.arguments[0]),
+                "jnz" => self.jnz(&instruction.arguments[0], &instruction.arguments[1]),
+                "tgl" => self.tgl(&instruction.arguments[0]),
+                _ => panic!("Invalid instruction {}", instruction.name),
+            };
+
+            if let Some(val) = output {
+                return val;
+            }
+        }
     }
 
     pub fn run_program(&mut self, program: &[&str]) {
@@ -186,6 +232,9 @@ impl PrototypeComputer {
                 }
                 "inc" => {
                     self.inc(&instruction.arguments[0]);
+                }
+                "out" => {
+                    self.out(&instruction.arguments[0]);
                 }
                 "dec" => {
                     self.dec(&instruction.arguments[0]);
